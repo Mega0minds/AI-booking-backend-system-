@@ -20,7 +20,8 @@ const initializeFirebase = () => {
       if (missingVars.length > 0) {
         console.error('❌ Missing required Firebase environment variables:', missingVars);
         console.error('💡 Please check your .env file and make sure all Firebase variables are set');
-        process.exit(1);
+        console.warn('⚠️  MVP Mode: Continuing without Firebase...');
+        throw new Error('Firebase credentials missing');
       }
 
       // Initialize with service account key
@@ -52,7 +53,9 @@ const initializeFirebase = () => {
   } catch (error) {
     console.error('❌ Firebase initialization error:', error.message);
     console.error('💡 Make sure your .env file contains all required Firebase variables');
-    process.exit(1);
+    console.warn('⚠️  MVP Mode: Continuing without Firebase...');
+    // Don't exit - let the app continue without Firebase
+    throw error;
   }
 };
 

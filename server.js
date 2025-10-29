@@ -19,8 +19,14 @@ const app = express();
 // This allows Express to correctly identify the client's IP address
 app.set('trust proxy', true);
 
-// Initialize Firebase
-initializeFirebase();
+// Initialize Firebase with error handling (non-blocking for MVP)
+try {
+  initializeFirebase();
+  console.log('✅ Firebase initialized successfully');
+} catch (error) {
+  console.error('⚠️ Firebase initialization failed:', error.message);
+  console.log('⚠️ Continuing without Firebase (MVP mode)');
+}
 
 // CORS - Allow all origins (MVP mode)
 app.use(cors({
@@ -58,6 +64,19 @@ app.get('/api/health', (req, res) => {
     status: 'success',
     message: 'API is running',
     timestamp: new Date().toISOString()
+  });
+});
+
+// Test endpoint without Firebase
+app.get('/api/test', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Backend is responding',
+    env: {
+      nodeEnv: process.env.NODE_ENV,
+      hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+      hasFirebaseProjectId: !!process.env.FIREBASE_PROJECT_ID
+    }
   });
 });
 
