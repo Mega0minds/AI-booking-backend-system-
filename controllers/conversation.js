@@ -6,6 +6,11 @@ const { getFirestore } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
 
+// Helper function to generate session ID
+function generateSessionId() {
+  return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
 // Load hotel data from JSON file
 const loadHotelData = () => {
   try {
@@ -65,12 +70,16 @@ IMPORTANT RULES:
 // @access  Public
 exports.startConversation = async (req, res, next) => {
   try {
+    console.log('Start conversation endpoint called');
+    
     const sessionId = req.body.sessionId || generateSessionId();
+    console.log('Session ID:', sessionId);
     
     // Check if conversation already exists
     let conversation = await Conversation.findBySessionId(sessionId);
     
     if (!conversation) {
+      console.log('Creating new conversation');
       // Create new conversation with the exact starting message
       conversation = await Conversation.create({
         sessionId,
@@ -80,6 +89,9 @@ exports.startConversation = async (req, res, next) => {
           timestamp: new Date()
         }]
       });
+      console.log('Conversation created:', conversation.id);
+    } else {
+      console.log('Existing conversation found');
     }
 
     res.status(200).json({
@@ -90,9 +102,11 @@ exports.startConversation = async (req, res, next) => {
       messages: conversation.messages
     });
   } catch (error) {
+    console.error('Error in startConversation:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
@@ -620,11 +634,6 @@ async function extractBookingInfo(conversation) {
     hasBookingInfo,
     bookingInfo
   };
-}
-
-// Helper function to generate session ID
-function generateSessionId() {
-  return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
 // Helper function to extract location from messages
