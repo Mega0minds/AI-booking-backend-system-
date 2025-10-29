@@ -1,9 +1,7 @@
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
-const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const { initializeFirebase } = require('./config/database');
@@ -17,56 +15,18 @@ const voiceRoutes = require('./routes/voice');
 
 const app = express();
 
+// Trust proxy - required when behind a reverse proxy (like Render)
+// This allows Express to correctly identify the client's IP address
+app.set('trust proxy', true);
+
 // Initialize Firebase
 initializeFirebase();
 
-// Security middleware
-app.use(helmet());
-
-// CORS configuration - allow frontend origins
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://127.0.0.1:5500',
-  'http://localhost:5500',
-  'http://127.0.0.1:3000',
-  'https://ai-powered-booking-system.vercel.app',
-  process.env.FRONTEND_URL
-].filter(Boolean); // Remove undefined values
-
+// CORS - Allow all origins (MVP mode)
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.) in development
-    if (!origin && process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
-    
-    // Allow if origin is in whitelist
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // Allow Vercel preview deployments (*.vercel.app)
-    if (origin && origin.endsWith('.vercel.app')) {
-      return callback(null, true);
-    }
-    
-    // In production, only allow whitelisted origins or Vercel domains
-    if (process.env.NODE_ENV === 'production') {
-      return callback(new Error('Not allowed by CORS'));
-    }
-    
-    // In development, allow all origins
-    callback(null, true);
-  },
+  origin: true,
   credentials: true
 }));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use('/api/', limiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
